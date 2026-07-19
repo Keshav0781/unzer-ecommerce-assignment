@@ -109,4 +109,22 @@ class CheckoutControllerTest {
             .andExpect(jsonPath("$.order.status").value("AWAITING_PAYMENT"))
             .andExpect(jsonPath("$.redirectUrl").exists());
     }
+
+    @Test
+    void checkout_insufficientStock_returnsConflictNotServerError() throws Exception {
+        String requestBody = """
+            {
+                "idempotencyKey": "%s",
+                "customerId": null,
+                "items": [{"productVariantId": "%s", "quantity": 100}],
+                "method": "CREDIT_CARD",
+                "paymentToken": "mock-token"
+            }
+            """.formatted(UUID.randomUUID(), variantId);
+
+        mockMvc.perform(post("/checkout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isConflict());
+    }
 }
