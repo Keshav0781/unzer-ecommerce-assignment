@@ -113,4 +113,4 @@ Requires Docker running (tests use Testcontainers, a separate, temporary databas
 ./mvnw test
 ```
 
-25 tests, including `reserveStock_preventsOversellUnderConcurrency` (the oversell mechanism, two threads racing for the last unit), checkout idempotency, cross-module transaction rollback on partial failure, the full webhook-to-order-confirmation flow, the reconciliation job resolving stale payments, and correct HTTP status codes (409/404) for client errors.
+27 tests, including `reserveStock_preventsOversellUnderConcurrency` (the oversell mechanism, two threads racing for the last unit), checkout idempotency, cross-module transaction rollback on partial failure, the full webhook-to-order-confirmation flow, the reconciliation job resolving stale payments, and correct HTTP status codes for both client errors (409/404) and upstream Unzer failures (502).
