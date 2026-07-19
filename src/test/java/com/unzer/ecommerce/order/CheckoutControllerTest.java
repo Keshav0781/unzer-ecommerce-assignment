@@ -6,6 +6,7 @@ import com.unzer.ecommerce.catalog.ProductVariant;
 import com.unzer.ecommerce.catalog.ProductVariantRepository;
 import com.unzer.ecommerce.inventory.Stock;
 import com.unzer.ecommerce.inventory.StockRepository;
+import com.unzer.ecommerce.payment.MockPaymentGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +46,15 @@ class CheckoutControllerTest {
     @Autowired
     private StockRepository stockRepository;
 
+    @Autowired
+    private MockPaymentGateway mockPaymentGateway;
+
     private UUID variantId;
 
     @BeforeEach
     void setUp() {
+        mockPaymentGateway.setSimulateChargeFailure(false);
+
         Product product = new Product();
         product.setName("Test Product");
         product.setDescription("A product created for tests");
@@ -126,5 +132,25 @@ class CheckoutControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
             .andExpect(status().isConflict());
+    }
+
+    @Test
+    void checkout_paymentGatewayFailure_returnsBadGatewayNotServerError() throws Exception {
+        mockPaymentGateway.setSimulateChargeFailure(true);
+
+        String requestBody = """
+            {
+                "idempotencyKey": "%s",
+                "customerId": null,
+                "items": [{"productVariantId": "%s", "quantity": 1}],
+                "method": "CREDIT_CARD",
+                "paymentToken": "mock-token"
+            }
+            """.formatted(UUID.randomUUID(), variantId);
+
+        mockMvc.perform(post("/checkout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isBadGateway());
     }
 }

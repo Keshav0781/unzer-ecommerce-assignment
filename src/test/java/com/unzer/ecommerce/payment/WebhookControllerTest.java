@@ -70,6 +70,7 @@ class WebhookControllerTest {
     @BeforeEach
     void setUp() {
         mockPaymentGateway.setSimulateFailure(false);
+        mockPaymentGateway.setSimulateStatusCheckFailure(false);
 
         Product product = new Product();
         product.setName("Test Product");
@@ -136,5 +137,31 @@ class WebhookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void receiveWebhook_whenStatusCheckFails_returnsBadGatewayNotServerError() throws Exception {
+        String idempotencyKey = UUID.randomUUID().toString();
+        Order order = orderService.startCheckout(idempotencyKey, null, List.of(new CheckoutItemRequest(variantId, 1)), PaymentMethod.CREDIT_CARD);
+
+        PaymentAttempt attempt = paymentAttemptRepository.findByOrderId(order.getId()).get(0);
+        String unzerPaymentId = "test-pay-" + UUID.randomUUID();
+        paymentAttemptService.recordChargeInitiated(attempt.getId(), "test-resource-id", unzerPaymentId);
+
+        mockPaymentGateway.setSimulateStatusCheckFailure(true);
+
+        String requestBody = """
+            {
+                "event": "payment.completed",
+                "publicKey": "s-pub-test",
+                "paymentId": "%s",
+                "retrieveUrl": "https://api.unzer.com/v1/payments/%s"
+            }
+            """.formatted(unzerPaymentId, unzerPaymentId);
+
+        mockMvc.perform(post("/webhooks/unzer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isBadGateway());
     }
 }

@@ -10,13 +10,27 @@ import java.util.UUID;
 public class MockPaymentGateway implements PaymentGateway {
 
     private volatile boolean simulateFailure = false;
+    private volatile boolean simulateChargeFailure = false;
+    private volatile boolean simulateStatusCheckFailure = false;
 
     public void setSimulateFailure(boolean simulateFailure) {
         this.simulateFailure = simulateFailure;
     }
 
+    public void setSimulateChargeFailure(boolean simulateChargeFailure) {
+        this.simulateChargeFailure = simulateChargeFailure;
+    }
+
+    public void setSimulateStatusCheckFailure(boolean simulateStatusCheckFailure) {
+        this.simulateStatusCheckFailure = simulateStatusCheckFailure;
+    }
+
     @Override
     public ChargeResult charge(ChargeRequest request) {
+        if (simulateChargeFailure) {
+            throw new PaymentGatewayException("Simulated Unzer charge failure", new RuntimeException("mock cause"));
+        }
+
         String resourceId = "mock-resource-" + UUID.randomUUID();
         String paymentId = "mock-pay-" + UUID.randomUUID();
 
@@ -30,6 +44,10 @@ public class MockPaymentGateway implements PaymentGateway {
 
     @Override
     public PaymentStatusResult checkStatus(String paymentId) {
+        if (simulateStatusCheckFailure) {
+            throw new PaymentGatewayException("Simulated Unzer status check failure", new RuntimeException("mock cause"));
+        }
+
         return new PaymentStatusResult(!simulateFailure, false);
     }
 }
