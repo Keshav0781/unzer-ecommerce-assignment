@@ -39,6 +39,11 @@ public class UnzerPaymentGateway implements PaymentGateway {
 
     @Override
     public ChargeResult charge(ChargeRequest request) {
+        if (request.method() == PaymentMethod.WERO) {
+            throw new UnsupportedOperationException(
+                "Wero is designed but stubbed for this slice; no Wero class exists in java-sdk 5.2.0");
+        }
+
         try {
             BigDecimal amount = BigDecimal.valueOf(request.amount()).movePointLeft(2);
             Currency currency = Currency.getInstance(request.currency());
@@ -50,8 +55,7 @@ public class UnzerPaymentGateway implements PaymentGateway {
                     Pis pis = unzer.createPaymentType(new Pis());
                     yield unzer.charge(amount, currency, pis.getId(), url);
                 }
-                case WERO -> throw new UnsupportedOperationException(
-                    "Wero is designed but stubbed for this slice; no Wero class exists in java-sdk 5.2.0");
+                case WERO -> throw new IllegalStateException("unreachable, handled above");
             };
 
             String redirectUrl = charge.getRedirectUrl() != null ? charge.getRedirectUrl().toString() : null;
