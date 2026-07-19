@@ -10,6 +10,7 @@ Checkout to payment to order-confirmation slice. See `ARCHITECTURE.md` for the f
 - **Local development and all tests use `MockPaymentGateway`**, not the real SDK, controlled by one config property (`unzer.payment-gateway`), no code changes needed to swap.
 - **No frontend or admin UI.** Catalog and customer accounts are designed (see the data model in `ARCHITECTURE.md`) but not built; this slice is checkout-only, guest-checkout only.
 - **Refunds are designed, not implemented.** The `refund` table exists; no service uses it yet.
+- **Payment reconciliation is live**: a scheduled job checks for orders stuck in `AWAITING_PAYMENT` past a threshold (10 minutes by default) and resolves them automatically, reusing the same webhook-processing logic. Configurable via `unzer.reconciliation.stale-threshold-minutes` and `unzer.reconciliation.interval-ms` in `application.properties`.
 
 ## Prerequisites
 
@@ -112,4 +113,4 @@ Requires Docker running (tests use Testcontainers, a separate, temporary databas
 ./mvnw test
 ```
 
-22 tests, including `reserveStock_preventsOversellUnderConcurrency` (the oversell mechanism, two threads racing for the last unit), checkout idempotency, cross-module transaction rollback on partial failure, and the full webhook-to-order-confirmation flow.
+24 tests, including `reserveStock_preventsOversellUnderConcurrency` (the oversell mechanism, two threads racing for the last unit), checkout idempotency, cross-module transaction rollback on partial failure, the full webhook-to-order-confirmation flow, and the reconciliation job resolving stale payments.

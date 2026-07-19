@@ -22,7 +22,7 @@ Checkout itself is synchronous request/response, the customer is waiting on `ord
 graph LR
     Customer([Customer]) -->|Browses, buys| System[E-commerce Shop System]
     Admin([Shop Admin]) -->|Manages catalog| System
-    System -->|Charge| Unzer[[Unzer Payment API]]
+    System -->|Charge, check status| Unzer[[Unzer Payment API]]
     Unzer -->|Webhook| System
 
     style Unzer fill:#999,color:#fff
@@ -275,6 +275,7 @@ The modular monolith trades independent scaling today for lower complexity now, 
 - Real production deployment, real cardholder data, or full PCI-DSS; sandbox only.
 - Tax and VAT calculation; total_amount assumes this is already solved, a real gap for a European system.
 - Refund processing; the `refund` table exists in the schema, but no service implements it, this slice is checkout-to-confirmation only, refunds are a genuine post-purchase capability left for a future slice.
+- Retry capping and manual-review escalation for indefinitely-pending payments; the reconciliation job retries stale attempts on every run with no limit, `retry_count` exists in the schema but is never read or incremented
 
 **With more time:**
 - A read replica for catalog queries, so browsing no longer competes with checkout for database capacity, section 7's one unsolved scaling gap.
